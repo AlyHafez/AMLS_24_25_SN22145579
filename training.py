@@ -69,7 +69,8 @@ class CNN(nn.Module):
 
         return x
 
-def trainCNN(lr:float, num_epoch:int, train, val, input_dim: int, num_classes:int):
+def trainCNN(lr:float, num_epoch:int, train, val, input_dim: int, num_classes:int, seed:int):
+    torch.manual_seed(seed)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = CNN(input_dim, num_classes)
     criterion = nn.CrossEntropyLoss()
@@ -78,7 +79,11 @@ def trainCNN(lr:float, num_epoch:int, train, val, input_dim: int, num_classes:in
     val_losses = []
     val_accuracies = [] 
     train_accuracies=[]
-
+    period = 10
+    minloss = 10.0
+    bestacc = 0.0
+    delta = 1e-3
+    counter=0.0
     for epoch in range(num_epoch):
         model.train()
         correct = 0
@@ -138,8 +143,19 @@ def trainCNN(lr:float, num_epoch:int, train, val, input_dim: int, num_classes:in
 
         val_losses.append(epoch_val_loss)
         val_accuracies.append(epoch_val_acc)
+        if (minloss-delta)>epoch_val_loss:
+            minloss = epoch_val_loss
+            counter = 0 
+            bestacc = epoch_val_acc
 
-    return train_losses, train_accuracies, val_losses, val_accuracies, num_epoch
+            print(f"epoch{epoch} performs better, acccuracy:{bestacc}")
+        else:
+            counter+=1
+        if((period<=counter) or epoch>=num_epoch):
+            print(f"early stopping implemented at:{epoch-period} with accuracy : {bestacc} ")
+            return train_losses, train_accuracies, val_losses, val_accuracies, (epoch+1)
+
+    
 
             
 
