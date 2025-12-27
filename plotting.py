@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, classification_report, recall_score, precision_score
 
 def plot_loss_acc(result, filename:str):
 
@@ -63,7 +64,7 @@ def plot_loss_acc(result, filename:str):
     plt.savefig(f"training_val_acc_{filename}.png")
     plt.close()
 
-def class_balance(labels):
+def class_balance(labels, filename:str):
 
     y = pd.Series(labels.reshape(-1))
     freqs = y.value_counts().sort_index() / len(y)
@@ -71,7 +72,45 @@ def class_balance(labels):
     plt.bar(freqs.index.astype(str), freqs.values)
     plt.ylabel("Proportion")
     plt.title("Class balance")
-    plt.savefig("class_balance.png")
+    plt.savefig(f"class_balance{filename}.png")
 
     print("Counts:\n", y.value_counts().sort_index())
     print("Proportions:\n", freqs)
+
+def statistics(val, result, f1_svm, recall_svm, accuracy_svm ):
+    #CNN
+    y_true = val.dataset.labels.squeeze()
+
+    acc_list = []
+    prec_list = []
+    rec_list = []
+    f1_list = []
+    best_acc = [r['bestacc'] for r in result]
+    
+    mean_acc = np.mean(best_acc)
+    acc_std = np.std(best_acc)
+    for r in result:
+        y_pred = np.array(r["best_prediction"]).squeeze()
+
+
+        prec_list.append(precision_score(y_true, y_pred, average="macro", zero_division=0))
+        rec_list.append(recall_score(y_true, y_pred, average="macro", zero_division=0))
+        f1_list.append(f1_score(y_true, y_pred, average="macro", zero_division=0))
+
+    print(f"Accuracy:  {mean_acc} ± {acc_std}")
+    print(f"Precision: {np.mean(prec_list):.3f} ± {np.std(prec_list):.3f}")
+    print(f"Recall:    {np.mean(rec_list):.3f} ± {np.std(rec_list):.3f}")
+    print(f"Macro F1:  {np.mean(f1_list):.3f} ± {np.std(f1_list):.3f}")
+
+    #SVM
+    mean_f1 = np.mean(f1_svm)
+    std_f1 = np.std(f1_svm)
+
+    mean_recall = np.mean(recall_svm)
+    std_recall = np.std(recall_svm)
+
+    mean_acc_svm = np.mean(accuracy_svm)
+    std_acc_svm = np.std(accuracy_svm)
+    print(f"accuracy SVM is: {mean_acc_svm} ± {std_acc_svm}")
+    print(f"F1 SVM is: {mean_f1} ± {std_f1}")
+    print(f"Recall SVM is: {mean_recall} ± {std_recall}")

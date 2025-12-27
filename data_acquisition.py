@@ -52,6 +52,24 @@ def load_dataset_ml(train,val,test):
 
     return x_train, y_train, x_val, y_val, x_test, y_test
 
+def augment_data(batch_size):
+    train_transform = transforms.Compose([
+        transforms.RandomHorizontalFlip(p=0.5),
+        transforms.RandomRotation(15),
+        transforms.ColorJitter(brightness=0.08, contrast=0.08),
+        transforms.ToTensor(), 
+        transforms.Normalize(mean=[0.5], std=[0.5])
+    ])
+
+    val_transform = transforms.Compose(
+    [transforms.ToTensor(), 
+     transforms.Normalize(mean=[0.5], std=[0.5])])
+    train_ds = BreastMNIST(split="train", transform=train_transform, download=True)
+    val_ds   = BreastMNIST(split="val",   transform=val_transform, download=True)
+    test_ds  = BreastMNIST(split="test",  transform=val_transform, download=True)
+
+    return train_ds, val_ds, test_ds
+
 
 
 

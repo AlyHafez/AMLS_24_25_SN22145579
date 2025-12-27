@@ -159,7 +159,7 @@ def trainCNN(lr:float, num_epoch:int, train, val, input_dim: int, num_classes:in
             counter+=1
         if((period<=counter)):
             print(f"early stopping implemented at:{epoch-period} with accuracy : {bestacc} ")
-            return train_losses, train_accuracies, val_losses, val_accuracies, (epoch+1), best_prediction
+            return train_losses, train_accuracies, val_losses, val_accuracies, (epoch+1), best_prediction, bestacc
 
 
     
