@@ -9,6 +9,7 @@ import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 
 from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, classification_report, recall_score, precision_score
+from sklearn import svm
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -72,13 +73,15 @@ class CNN(nn.Module):
 def trainCNN(lr:float, num_epoch:int, train, val, input_dim: int, num_classes:int, seed:int):
     torch.manual_seed(seed)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = CNN(input_dim, num_classes)
+    model = CNN(input_dim, num_classes).to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr =lr)
     train_losses = []
     val_losses = []
     val_accuracies = [] 
     train_accuracies=[]
+    best_prediction=[]
+
     period = 10
     minloss = 10.0
     bestacc = 0.0
@@ -127,6 +130,7 @@ def trainCNN(lr:float, num_epoch:int, train, val, input_dim: int, num_classes:in
 
         val_correct = 0
         val_total = 0
+        all_preds = [] 
         with torch.no_grad():
             for images, labels in val:
                 images = images.to(device)
@@ -137,9 +141,10 @@ def trainCNN(lr:float, num_epoch:int, train, val, input_dim: int, num_classes:in
                 _, preds = torch.max(outputs, 1)
                 val_correct += (preds == labels).sum().item()
                 val_total += labels.size(0)
+                all_preds.append(preds.cpu())  
             
-                epoch_val_loss = val_running_loss / len(val)
-                epoch_val_acc = val_correct / val_total
+            epoch_val_loss = val_running_loss / len(val)
+            epoch_val_acc = val_correct / val_total
 
         val_losses.append(epoch_val_loss)
         val_accuracies.append(epoch_val_acc)
@@ -147,16 +152,29 @@ def trainCNN(lr:float, num_epoch:int, train, val, input_dim: int, num_classes:in
             minloss = epoch_val_loss
             counter = 0 
             bestacc = epoch_val_acc
+            best_prediction = torch.cat(all_preds).numpy()
 
             print(f"epoch{epoch} performs better, acccuracy:{bestacc}")
         else:
             counter+=1
-        if((period<=counter) or epoch>=num_epoch):
+        if((period<=counter)):
             print(f"early stopping implemented at:{epoch-period} with accuracy : {bestacc} ")
-            return train_losses, train_accuracies, val_losses, val_accuracies, (epoch+1)
+            return train_losses, train_accuracies, val_losses, val_accuracies, (epoch+1), best_prediction
+
 
     
 
-            
+def kernel_svm(x_train, y_train, x_val,y_val, seed):
+    clf = svm.SVC(random_state=seed)      
+    clf.fit(x_train, y_train)   
+    y_pred = clf.predict(x_val)
+    print(confusion_matrix(y_val, y_pred))
+    f1 = f1_score(y_val, y_pred, average='macro')
+    accuracy = accuracy_score(y_val, y_pred)
+    recall = recall_score(y_val,y_pred)
+    return f1, accuracy, recall
+
+
+    
 
 

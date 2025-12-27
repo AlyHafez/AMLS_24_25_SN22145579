@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-
+import pandas as pd
 
 def plot_loss_acc(result, filename:str):
 
@@ -63,3 +63,15 @@ def plot_loss_acc(result, filename:str):
     plt.savefig(f"training_val_acc_{filename}.png")
     plt.close()
 
+def class_balance(labels):
+
+    y = pd.Series(labels.reshape(-1))
+    freqs = y.value_counts().sort_index() / len(y)
+
+    plt.bar(freqs.index.astype(str), freqs.values)
+    plt.ylabel("Proportion")
+    plt.title("Class balance")
+    plt.savefig("class_balance.png")
+
+    print("Counts:\n", y.value_counts().sort_index())
+    print("Proportions:\n", freqs)
