@@ -170,8 +170,8 @@ def trainCNN(lr:float, num_epoch:int, train, val, input_dim: int, num_classes:in
             print(f"early stopping implemented at:{epoch-period} with accuracy : {bestacc} ")
             return train_losses, train_accuracies, val_losses, val_accuracies, best_epoch, best_prediction, bestacc, model
         
-def evaluate_CNN(model, test, seed, device=None):
-    torch.manual_seed(seed)
+def evaluate_CNN(model, test, device=None):
+
     if device is None:
         device = next(model.parameters()).device  # uses model's device
     model.eval()

@@ -96,7 +96,7 @@ def statistics(val, result, filename:str):
         prec_list.append(precision_score(y_true, y_pred, average="macro", zero_division=0))
         rec_list.append(recall_score(y_true, y_pred, average="macro", zero_division=0))
         f1_list.append(f1_score(y_true, y_pred, average="macro", zero_division=0))
-    print(f"CNN performance for{filename}")
+    print(f"CNN performance for {filename}")
     print(f"Accuracy:  {mean_acc} ± {acc_std}")
     print(f"Precision: {np.mean(prec_list):.3f} ± {np.std(prec_list):.3f}")
     print(f"Recall:    {np.mean(rec_list):.3f} ± {np.std(rec_list):.3f}")
