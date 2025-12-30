@@ -3,7 +3,7 @@ from torch import nn
 from torch import optim
 import random
 import torchvision
-
+import numpy as np
 import torch.nn.functional as F
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
@@ -16,26 +16,26 @@ import numpy as np
 
 
 class CNN(nn.Module):
-    def __init__(self, in_channels, num_classes):
+    def __init__(self, in_channels, num_classes, channels:list):
         super(CNN, self).__init__()
 
-        self.conv1 = nn.Conv2d(in_channels=in_channels, out_channels=16, kernel_size=3, padding=1)
-        self.bn1 = nn.BatchNorm2d(16)
+        self.conv1 = nn.Conv2d(in_channels=in_channels, out_channels=channels[0], kernel_size=3, padding=1)
+        self.bn1 = nn.BatchNorm2d(channels[0])
         self.relu1 = nn.ReLU()
         self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
 
-        self.conv2 = nn.Conv2d(16,32, kernel_size=3, padding=1)
-        self.bn2 = nn.BatchNorm2d(32)  
+        self.conv2 = nn.Conv2d(channels[0], channels[1], kernel_size=3, padding=1)
+        self.bn2 = nn.BatchNorm2d(channels[1])  
         self.relu2 = nn.ReLU()
         self.pool2 = nn.MaxPool2d(2, 2)
 
-        self.conv3 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
-        self.bn3 = nn.BatchNorm2d(64)
+        self.conv3 = nn.Conv2d(channels[1], channels[2], kernel_size=3, padding=1)
+        self.bn3 = nn.BatchNorm2d(channels[2])
         self.relu3 = nn.ReLU()
         self.pool3 = nn.MaxPool2d(2, 2)
 
-        self.fc1 = nn.Linear(64 * 3 * 3, 128)
-        self.dropout = nn.Dropout(0.3)
+        self.fc1 = nn.Linear(channels[2] * 3 * 3, 128)
+        self.dropout = nn.Dropout(0.2)
         self.fc2 = nn.Linear(128, num_classes) 
 
     def forward(self, x):
@@ -70,13 +70,13 @@ class CNN(nn.Module):
 
         return x
 
-def trainCNN(lr:float, num_epoch:int, train, val, input_dim: int, num_classes:int, seed:int):
+def trainCNN(lr:float, num_epoch:int, train, val, input_dim: int, num_classes:int, channels:list, seed:int):
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = CNN(input_dim, num_classes).to(device)
+    model = CNN(input_dim, num_classes, channels).to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr =lr)
     train_losses = []
@@ -162,7 +162,7 @@ def trainCNN(lr:float, num_epoch:int, train, val, input_dim: int, num_classes:in
             best_state = {k: v.detach().clone()
                 for k, v in model.state_dict().items()}
 
-            print(f"epoch{epoch} performs better, acccuracy:{bestacc}")
+            #print(f"epoch{epoch} performs better, acccuracy:{bestacc}")
         else:
             counter+=1
         if((period<=counter)):

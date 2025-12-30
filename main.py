@@ -7,59 +7,86 @@ from B.plotting import plot_loss_acc, class_balance, statistics, test_performanc
 from sklearn.metrics import classification_report
 import numpy as np
 seed=[0,1,2,3,4]
-batch_size=[32,64,128]
-result = []
+
 test_acc = []
 test_f1 = []
 test_recall = []
 test_prec = []
-model_orig = []
-model_aug = []
+model_medium = []
+model_large = []
+model_med_aug = []
+model_large_aug = []
 
+small_cnn = [8,16,32]
+medium_cnn = [16,32,64]
+large_cnn = [32,64,128]
 
+result_small = []
+result_medium = []
+result_large = []
 
-
-for batch in batch_size:
-    train_ds, val_ds, test_ds = load_breastmnist(batch)
-    
-    train, val,test = load_dataset_CNN(train_ds, val_ds, test_ds, batch)
-    
-    class_balance(train.dataset.labels, 'initial')
-    for s in seed:
-
-
-        train_loss, train_acc, val_loss, val_acc, epoch, best_prediction, bestacc, model = trainCNN(0.0001, 100, train, val, 1, 2, s)
-    
-        result.append({
-            "seed":s,
-            "train_loss":train_loss,
-            "train_acc" : train_acc,
-            "val_loss" : val_loss,
-            "val_acc" : val_acc,
-            "best_prediction" : best_prediction,
-            "bestacc" : bestacc
-        })
-        if batch ==64:
-            model_orig.append(model)
-
-        print(classification_report(val.dataset.labels, best_prediction))
-
+train_ds, val_ds, test_ds = load_breastmnist()
 
     
-        
-    
 
-    statistics(val, result, 'initial')
-    plot_loss_acc(result, f'initial{batch}')
-    result.clear()
+
+train, val,test = load_dataset_CNN(train_ds, val_ds, test_ds, batch_size=64)  
+for s in seed:
+    train_loss, train_acc, val_loss, val_acc, epoch, best_prediction, bestacc, model = trainCNN(0.0001, 150, train, val, 1, 2,small_cnn, s)
+    result_small.append({
+    "seed":s,
+    "train_loss":train_loss,
+    "train_acc" : train_acc,
+    "val_loss" : val_loss,
+    "val_acc" : val_acc,
+    "best_prediction" : best_prediction,
+    "bestacc" : bestacc
+    })
+
+    train_loss, train_acc, val_loss, val_acc, epoch, best_prediction, bestacc, model = trainCNN(0.0001, 150, train, val, 1, 2,medium_cnn, s)
+    model_medium.append(model)
+    result_medium.append({
+        "seed":s,
+        "train_loss":train_loss,
+        "train_acc" : train_acc,
+        "val_loss" : val_loss,
+        "val_acc" : val_acc,
+        "best_prediction" : best_prediction,
+        "bestacc" : bestacc
+    })
+
+    train_loss, train_acc, val_loss, val_acc, epoch, best_prediction, bestacc, model = trainCNN(0.0001, 150, train, val, 1, 2,large_cnn, s)
+    model_large.append(model)
+    result_large.append({
+        "seed":s,
+        "train_loss":train_loss,
+        "train_acc" : train_acc,
+        "val_loss" : val_loss,
+        "val_acc" : val_acc,
+        "best_prediction" : best_prediction,
+        "bestacc" : bestacc
+    })
+
+statistics(val, result_small, 'small_cnn')
+plot_loss_acc(result_small, 'small_cnn')
+result_small.clear()
+statistics(val, result_medium, 'medium_cnn')
+plot_loss_acc(result_medium, 'medium_cnn')
+result_medium.clear()
+statistics(val, result_large, 'large_cnn')
+plot_loss_acc(result_large, 'large_cnn')
+result_large.clear()
+
+
+
 train_ml, val_ml, test_ml = load_breastmnist_ml()
 x_train, y_train, x_val, y_val, x_test, y_test = load_dataset_ml(train_ml, val_ml, test_ml)
-y_pred, svm_model = kernel_svm(x_train, y_train, x_val, y_val, seed=0)
+y_pred, svm_model = kernel_svm(x_train, y_train, x_val, seed=0)
 performance(y_val, y_pred)
 
 
 
-aug_train_ds, aug_val_ds, aug_test_ds = augment_data(batch_size=64)
+aug_train_ds, aug_val_ds, aug_test_ds = augment_data()
 train_aug, val_aug,test_aug = load_dataset_CNN(aug_train_ds, aug_val_ds, aug_test_ds, batch_size=64)
 train_ml, val_ml, test_ml = load_breastmnist_ml()
 x_train, y_train, x_val, y_val, x_test, y_test = load_dataset_ml(train_ml, val_ml, test_ml)
@@ -69,9 +96,21 @@ x_train, y_train, x_val, y_val, x_test, y_test = load_dataset_ml(train_ml, val_m
 
 for s in seed:
    
-    train_loss, train_acc, val_loss, val_acc, best_epoch, best_prediction, bestacc, model_augment = trainCNN(0.0001, 100, train_aug, val_aug, 1, 2, s)
-    model_aug.append(model_augment)
-    result.append({
+    train_loss, train_acc, val_loss, val_acc, best_epoch, best_prediction, bestacc, model_augment = trainCNN(0.0001, 150, train_aug, val_aug, 1, 2,medium_cnn, s)
+    model_med_aug.append(model_augment)
+    result_medium.append({
+        "seed":s,
+        "train_loss":train_loss,
+        "train_acc" : train_acc,
+        "val_loss" : val_loss,
+        "val_acc" : val_acc,
+        "best_prediction" : best_prediction,
+        "bestacc" : bestacc
+    })
+    train_loss, train_acc, val_loss, val_acc, best_epoch, best_prediction, bestacc, model_augment = trainCNN(0.0001, 150, train_aug, val_aug, 1, 2,large_cnn, s)
+    model_large_aug.append(model_augment)
+
+    result_large.append({
         "seed":s,
         "train_loss":train_loss,
         "train_acc" : train_acc,
@@ -82,12 +121,17 @@ for s in seed:
     })
     print(classification_report(val_aug.dataset.labels, best_prediction))
 x_train_pca, x_val_pca, x_test_pca = PCA_ml(x_train, x_val, x_test, seed=0)
-y_pred, svm_model_pca = kernel_svm(x_train_pca, y_train, x_val_pca, y_val, seed=0)
+y_pred, svm_model_pca = kernel_svm(x_train_pca, y_train, x_val_pca, seed=0)
     
-statistics(val_aug, result, 'augmented')
+statistics(val_aug, result_medium, 'augmented medium')
 performance(y_val, y_pred)
-plot_loss_acc(result, 'augmented')
-result.clear()
+plot_loss_acc(result_medium, 'augmented medium')
+
+statistics(val_aug, result_large, 'augmented large')
+performance(y_val, y_pred)
+plot_loss_acc(result_large, 'augmented large')
+result_medium.clear()
+result_large.clear()
 
 
 
@@ -105,12 +149,12 @@ print("SVM with PCA")
 performance(y_test, y_test_pca)
 
 
-train_ds, val_ds, test_ds = load_breastmnist(batch_size=64)
+
 train, val, test = load_dataset_CNN(train_ds, val_ds, test_ds, batch_size=64)
 
-aug_train_ds, aug_val_ds, aug_test_ds = augment_data(batch_size=64)
-aug_train, aug_val, aug_test = load_dataset_CNN(aug_train_ds, aug_val_ds, aug_test_ds, batch_size=64)
-for m in model_orig:
+
+
+for m in model_medium:
    
     acc, prec, rec, f1, cm = evaluate_CNN(m, test)
     test_acc.append(acc)
@@ -118,14 +162,14 @@ for m in model_orig:
     test_recall.append(rec)
     test_f1.append(f1)
 
-print("No augmentation: ")
+print("Medium / No augmentation: ")
 test_performance(test_acc,test_prec,test_recall,test_f1)
 test_acc.clear()
 test_prec.clear()
 test_recall.clear()
 test_f1.clear()
 
-for m in  model_aug:
+for m in  model_large:
     
     acc, prec, rec, f1, cm = evaluate_CNN(m, test)
     test_acc.append(acc)
@@ -133,13 +177,43 @@ for m in  model_aug:
     test_recall.append(rec)
     test_f1.append(f1)
 
-print("augmented: ")
+print("Large / No augmentation: ")
 test_performance(test_acc,test_prec,test_recall,test_f1)
 test_acc.clear()
 test_prec.clear()
 test_recall.clear()
 test_f1.clear()
 
+
+for m in  model_med_aug:
+    
+    acc, prec, rec, f1, cm = evaluate_CNN(m, test)
+    test_acc.append(acc)
+    test_prec.append(prec)
+    test_recall.append(rec)
+    test_f1.append(f1)
+
+print("Medium / Augmentation: ")
+test_performance(test_acc,test_prec,test_recall,test_f1)
+test_acc.clear()
+test_prec.clear()
+test_recall.clear()
+test_f1.clear()
+
+for m in  model_large_aug:
+    
+    acc, prec, rec, f1, cm = evaluate_CNN(m, test)
+    test_acc.append(acc)
+    test_prec.append(prec)
+    test_recall.append(rec)
+    test_f1.append(f1)
+
+print("Large / Augmentation: ")
+test_performance(test_acc,test_prec,test_recall,test_f1)
+test_acc.clear()
+test_prec.clear()
+test_recall.clear()
+test_f1.clear()
 
 
 

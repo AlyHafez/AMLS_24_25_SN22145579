@@ -44,7 +44,7 @@ def test_svm(x_test, model):
 def performance(y_true, y_pred):
     """
     calculate performance metrics for predictions made by SVM 
-    It then prints put performance metrics such as accuracy, precision, recall, f1 and the confusion matrix for performance analysis
+    It then prints performance metrics such as accuracy, precision, recall, f1 and the confusion matrix for performance analysis
 
 
     parameters: 
