@@ -16,9 +16,18 @@ import numpy as np
 
 
 class CNN(nn.Module):
-    def __init__(self, in_channels, num_classes, channels:list):
-        super(CNN, self).__init__()
 
+    def __init__(self, in_channels, num_classes, channels:list):
+        """
+        A Convolutional Neural Network (CNN) model for image classification.
+        
+        Parameters:
+        in_channels (int): Number of input channels (e.g., 1 for grayscale)
+        num_classes (int): Number of output classes
+        channels (list): List containing the number of channels for each convolutional layer
+        """
+        super(CNN, self).__init__()
+        # Define convolutional layers, batch normalization, activation functions, pooling layers, and fully connected layers
         self.conv1 = nn.Conv2d(in_channels=in_channels, out_channels=channels[0], kernel_size=3, padding=1)
         self.bn1 = nn.BatchNorm2d(channels[0])
         self.relu1 = nn.ReLU()
@@ -71,10 +80,33 @@ class CNN(nn.Module):
         return x
 
 def trainCNN(lr:float, num_epoch:int, train, val, input_dim: int, num_classes:int, channels:list, seed:int):
+    """
+    Train CNN model on training set and validate on validation set with early stopping based on validation loss
+    parameters:
+    lr (float): Learning rate for optimizer
+    num_epoch (int): Maximum number of epochs to train
+    train: DataLoader for training set
+    val: DataLoader for validation set
+    input_dim (int): Number of input channels
+    num_classes (int): Number of output classes
+    channels (list): List containing the number of channels for each convolutional layer
+    seed (int): Random seed for reproducibility
+
+    Returns:
+    train_losses (list): Training loss for each epoch
+    train_accuracies (list): Training accuracy for each epoch
+    val_losses (list): Validation loss for each epoch
+    val_accuracies (list): Validation accuracy for each epoch
+    best_epoch (int): Epoch number with best validation performance
+    best_prediction (ndarray): Predicted labels on validation set at best epoch
+    bestacc (float): Best validation accuracy achieved
+    model: Trained CNN model based on best validation performance
+    """
+    # set random seeds for reproducibility
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
-
+    # initialize model, loss function, optimizer
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = CNN(input_dim, num_classes, channels).to(device)
     criterion = nn.CrossEntropyLoss()
@@ -84,7 +116,7 @@ def trainCNN(lr:float, num_epoch:int, train, val, input_dim: int, num_classes:in
     val_accuracies = [] 
     train_accuracies=[]
     best_prediction=[]
-
+    # early stopping parameters
     period = 10
     minloss = 10.0
     bestacc = 0.0
@@ -92,6 +124,7 @@ def trainCNN(lr:float, num_epoch:int, train, val, input_dim: int, num_classes:in
     counter=0.0
     best_state = None
     best_epoch = 0
+    # training loop
     for epoch in range(num_epoch):
         model.train()
         correct = 0
@@ -107,9 +140,9 @@ def trainCNN(lr:float, num_epoch:int, train, val, input_dim: int, num_classes:in
             inputs = inputs.to(device)
             labels = labels.to(device).squeeze().long()
 
-
+            # zero the parameter gradients
             optimizer.zero_grad()
-
+            # forward + backward + optimize
             outputs = model(inputs)
             loss = criterion(outputs, labels)
             loss.backward()
@@ -126,16 +159,17 @@ def trainCNN(lr:float, num_epoch:int, train, val, input_dim: int, num_classes:in
         
         
         
-        
+        # record training loss and accuracy
         train_losses.append(epoch_train_loss)
         train_accuracies.append(epoch_train_acc)
-
+        # validation phase
         model.eval()
         val_running_loss = 0.0
 
         val_correct = 0
         val_total = 0
         all_preds = [] 
+        # validate on validation set
         with torch.no_grad():
             for images, labels in val:
                 images = images.to(device)
@@ -153,6 +187,7 @@ def trainCNN(lr:float, num_epoch:int, train, val, input_dim: int, num_classes:in
 
         val_losses.append(epoch_val_loss)
         val_accuracies.append(epoch_val_acc)
+        # early stopping check based on validation loss
         if (minloss-delta)>epoch_val_loss:
             minloss = epoch_val_loss
             counter = 0 
@@ -166,12 +201,28 @@ def trainCNN(lr:float, num_epoch:int, train, val, input_dim: int, num_classes:in
         else:
             counter+=1
         if((period<=counter)):
+            # early stopping triggered save best model state
             model.load_state_dict(best_state)
             print(f"early stopping implemented at:{epoch-period} with accuracy : {bestacc} ")
             return train_losses, train_accuracies, val_losses, val_accuracies, best_epoch, best_prediction, bestacc, model
         
 def evaluate_CNN(model, test, device=None):
+    """
+    Evaluate trained CNN model on test set and compute performance metrics such as accuracy, precision, recall, f1 and confusion matrix
 
+    parameters:
+    model: Trained CNN model
+    test: DataLoader for test set
+    device: Device to run evaluation on (CPU or GPU). If None, uses model's device.
+
+    returns:
+    acc (float): Accuracy on test set
+    prec (float): Precision on test set
+    rec (float): Recall on test set
+    f1 (float): F1-score on test set
+    cm (ndarray): Confusion matrix on test set
+    """
+    # set device for evaluation
     if device is None:
         device = next(model.parameters()).device  # uses model's device
     model.eval()
@@ -179,6 +230,7 @@ def evaluate_CNN(model, test, device=None):
     all_true = []
     val_correct = 0
     val_total = 0
+    # evaluate on test set
     with torch.no_grad():
         for images, labels in test:
             images = images.to(device)
@@ -190,17 +242,15 @@ def evaluate_CNN(model, test, device=None):
             val_correct += (preds == labels).sum().item()
             val_total += labels.size(0) 
         acc =val_correct / val_total       
-    
+    # combine all predictions and true labels
     y_pred = torch.cat(all_preds).numpy()
     y_true = torch.cat(all_true).numpy()
 
-    
+    # compute performance metrics   
     prec = precision_score(y_true, y_pred, average="macro", zero_division=0)
     rec = recall_score(y_true, y_pred, average="macro", zero_division=0)
     f1 = f1_score(y_true, y_pred, average="macro", zero_division=0)
     cm = confusion_matrix(y_true, y_pred)
-
-
 
     return acc, prec, rec, f1, cm
    
