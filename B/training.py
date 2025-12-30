@@ -205,7 +205,7 @@ def trainCNN(lr:float, num_epoch:int, train, val, input_dim: int, num_classes:in
             model.load_state_dict(best_state)
             print(f"early stopping implemented at:{epoch-period} with accuracy : {bestacc} ")
             return train_losses, train_accuracies, val_losses, val_accuracies, best_epoch, best_prediction, bestacc, model
-        
+    return train_losses, train_accuracies, val_losses, val_accuracies, best_epoch, best_prediction, bestacc, model
 def evaluate_CNN(model, test, device=None):
     """
     Evaluate trained CNN model on test set and compute performance metrics such as accuracy, precision, recall, f1 and confusion matrix
