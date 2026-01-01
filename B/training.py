@@ -7,7 +7,7 @@ import numpy as np
 import torch.nn.functional as F
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
-from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, classification_report, recall_score, precision_score
+from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, classification_report, recall_score, precision_score, roc_auc_score
 
 
 
@@ -100,6 +100,7 @@ def trainCNN(lr:float, num_epoch:int, train, val, input_dim: int, num_classes:in
     best_epoch (int): Epoch number with best validation performance
     best_prediction (ndarray): Predicted labels on validation set at best epoch
     bestacc (float): Best validation accuracy achieved
+    best_auc (float): Best validation AUC achieved
     model: Trained CNN model based on best validation performance
     """
     # set random seeds for reproducibility
@@ -116,6 +117,7 @@ def trainCNN(lr:float, num_epoch:int, train, val, input_dim: int, num_classes:in
     val_accuracies = [] 
     train_accuracies=[]
     best_prediction=[]
+
     # early stopping parameters
     period = 10
     minloss = 10.0
@@ -124,6 +126,7 @@ def trainCNN(lr:float, num_epoch:int, train, val, input_dim: int, num_classes:in
     counter=0.0
     best_state = None
     best_epoch = 0
+    best_auc = 0.0
     # training loop
     for epoch in range(num_epoch):
         model.train()
@@ -149,6 +152,7 @@ def trainCNN(lr:float, num_epoch:int, train, val, input_dim: int, num_classes:in
             optimizer.step()
             _, pred = torch.max(outputs, 1)
             
+            
             running_loss += loss.item()
             correct += (pred == labels).sum().item()
             total += labels.size(0)
@@ -169,6 +173,10 @@ def trainCNN(lr:float, num_epoch:int, train, val, input_dim: int, num_classes:in
         val_correct = 0
         val_total = 0
         all_preds = [] 
+        all_scores = []
+        all_labels = []
+        y_score = []
+        val_auc = []
         # validate on validation set
         with torch.no_grad():
             for images, labels in val:
@@ -178,15 +186,23 @@ def trainCNN(lr:float, num_epoch:int, train, val, input_dim: int, num_classes:in
                 val_loss = criterion(outputs, labels)
                 val_running_loss+=val_loss.item()
                 _, preds = torch.max(outputs, 1)
+                probs = torch.softmax(outputs, dim=1)
                 val_correct += (preds == labels).sum().item()
                 val_total += labels.size(0)
                 all_preds.append(preds.cpu())  
+                all_scores.append(probs[:, 1].cpu())
+                all_labels.append(labels.cpu())
             
             epoch_val_loss = val_running_loss / len(val)
             epoch_val_acc = val_correct / val_total
 
+            y_true  = torch.cat(all_labels).numpy()
+            y_score = torch.cat(all_scores).numpy()
+            epoch_val_auc = roc_auc_score(y_true, y_score)
+
         val_losses.append(epoch_val_loss)
         val_accuracies.append(epoch_val_acc)
+        val_auc.append(epoch_val_auc)
         # early stopping check based on validation loss
         if (minloss-delta)>epoch_val_loss:
             minloss = epoch_val_loss
@@ -194,6 +210,7 @@ def trainCNN(lr:float, num_epoch:int, train, val, input_dim: int, num_classes:in
             bestacc = epoch_val_acc
             best_prediction = torch.cat(all_preds).numpy()
             best_epoch = epoch
+            best_auc = epoch_val_auc
             best_state = {k: v.detach().clone()
                 for k, v in model.state_dict().items()}
 
@@ -204,8 +221,8 @@ def trainCNN(lr:float, num_epoch:int, train, val, input_dim: int, num_classes:in
             # early stopping triggered save best model state
             model.load_state_dict(best_state)
             print(f"early stopping implemented at:{epoch-period} with accuracy : {bestacc} ")
-            return train_losses, train_accuracies, val_losses, val_accuracies, best_epoch, best_prediction, bestacc, model
-    return train_losses, train_accuracies, val_losses, val_accuracies, best_epoch, best_prediction, bestacc, model
+            return train_losses, train_accuracies, val_losses, val_accuracies, best_epoch, best_prediction, bestacc, model, best_auc
+    return train_losses, train_accuracies, val_losses, val_accuracies, best_epoch, best_prediction, bestacc, model, best_auc
 def evaluate_CNN(model, test, device=None):
     """
     Evaluate trained CNN model on test set and compute performance metrics such as accuracy, precision, recall, f1 and confusion matrix
@@ -220,6 +237,7 @@ def evaluate_CNN(model, test, device=None):
     prec (float): Precision on test set
     rec (float): Recall on test set
     f1 (float): F1-score on test set
+    auc (float): AUC on test set
     cm (ndarray): Confusion matrix on test set
     """
     # set device for evaluation
@@ -228,6 +246,7 @@ def evaluate_CNN(model, test, device=None):
     model.eval()
     all_preds=[]
     all_true = []
+    all_scores = []
     val_correct = 0
     val_total = 0
     # evaluate on test set
@@ -236,23 +255,27 @@ def evaluate_CNN(model, test, device=None):
             images = images.to(device)
             labels = labels.to(device).squeeze().long()   
             outputs = model(images)
-            preds = outputs.argmax(dim=1)        
+            preds = outputs.argmax(dim=1)  
+            probs = torch.softmax(outputs, dim=1) 
+
             all_preds.append(preds.cpu())
             all_true.append(labels.cpu())
+            all_scores.append(probs[:, 1].cpu())
             val_correct += (preds == labels).sum().item()
             val_total += labels.size(0) 
         acc =val_correct / val_total       
     # combine all predictions and true labels
     y_pred = torch.cat(all_preds).numpy()
     y_true = torch.cat(all_true).numpy()
-
+    y_score = torch.cat(all_scores).numpy()
     # compute performance metrics   
     prec = precision_score(y_true, y_pred, average="macro", zero_division=0)
     rec = recall_score(y_true, y_pred, average="macro", zero_division=0)
     f1 = f1_score(y_true, y_pred, average="macro", zero_division=0)
     cm = confusion_matrix(y_true, y_pred)
+    auc = roc_auc_score(y_true, y_score)
 
-    return acc, prec, rec, f1, cm
+    return acc, prec, rec, f1, cm, auc
    
 
     

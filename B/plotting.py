@@ -101,7 +101,8 @@ def statistics(ref, result, filename:str):
     rec_list = []
     f1_list = []
     best_acc = [r['bestacc'] for r in result] # extract best accuracy from each seed's result
-    
+
+    auc = [r['auc'] for r in result]
     mean_acc = np.mean(best_acc) # compute mean and std accuracy across seeds
     acc_std = np.std(best_acc)
     # compute precision, recall, f1 for each seed and store in lists
@@ -118,10 +119,10 @@ def statistics(ref, result, filename:str):
     print(f"Precision: {np.mean(prec_list):.3f} ± {np.std(prec_list):.3f}")
     print(f"Recall:    {np.mean(rec_list):.3f} ± {np.std(rec_list):.3f}")
     print(f"Macro F1:  {np.mean(f1_list):.3f} ± {np.std(f1_list):.3f}")
-
+    print(f"AUC:  {np.mean(auc):.3f} ± {np.std(auc):.3f}")
 
    
-def test_performance(acc_list:list, prec_list:list, rec_list:list,f1_list:list):
+def test_performance(acc_list:list, prec_list:list, rec_list:list,f1_list:list, auc:list):
     """
     calculate and print performance metrics mean and std for CNN across different seeds such as accuracy, precision, recall, f1 for test set
     
@@ -137,3 +138,4 @@ def test_performance(acc_list:list, prec_list:list, rec_list:list,f1_list:list):
     print(f"Precision: {np.mean(prec_list):.3f} ± {np.std(prec_list):.3f}")
     print(f"Recall:    {np.mean(rec_list):.3f} ± {np.std(rec_list):.3f}")
     print(f"Macro F1:  {np.mean(f1_list):.3f} ± {np.std(f1_list):.3f}")
+    print(f"AUC:  {np.mean(auc):.3f} ± {np.std(auc):.3f}")
