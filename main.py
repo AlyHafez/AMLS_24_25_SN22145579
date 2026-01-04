@@ -5,8 +5,9 @@ from B.training import trainCNN, evaluate_CNN
 from B.plotting import plot_loss_acc, class_balance, statistics, test_performance
 from sklearn.metrics import classification_report
 import numpy as np
+# Set random seed for reproducibility
 seed=[0,1,2,3,4]
-
+# Lists to store test performance metrics for different CNN models
 test_acc = []
 test_f1 = []
 test_recall = []
@@ -16,8 +17,10 @@ model_medium = []
 model_large = []
 model_med_aug = []
 model_large_aug = []
+model_extra_large = []
+model_extra_large_aug = []
 
-
+#
 small_cnn = [8,16,32]
 medium_cnn = [16,32,64]
 large_cnn = [32,64,128]
@@ -33,6 +36,7 @@ train_ds, val_ds, test_ds = load_breastmnist()
 
 
 train, val,test = load_dataset_CNN(train_ds, val_ds, test_ds, batch_size=64)  
+class_balance(train_ds.labels, 'train')
 for s in seed:
     train_loss, train_acc, val_loss, val_acc, epoch, best_prediction, bestacc, model,auc = trainCNN(0.0001, 150, train, val, 1, 2,small_cnn, s)
     result_small.append({
@@ -74,7 +78,7 @@ for s in seed:
     })
 
     train_loss, train_acc, val_loss, val_acc, epoch, best_prediction, bestacc, model,auc = trainCNN(0.0001, 150, train, val, 1, 2,very_large_cnn, s)
-    
+    model_extra_large.append(model)
     result_very_large.append({
         "seed":s,
         "train_loss":train_loss,
@@ -117,7 +121,7 @@ aug_train_ds, aug_val_ds, aug_test_ds = augment_data()
 train_aug, val_aug,test_aug = load_dataset_CNN(aug_train_ds, aug_val_ds, aug_test_ds, batch_size=64)
 train_ml, val_ml, test_ml = load_breastmnist_ml()
 x_train, y_train, x_val, y_val, x_test, y_test = load_dataset_ml(train_ml, val_ml, test_ml)
-
+class_balance(aug_train_ds.labels, 'augmented_train')
 
 
 
@@ -148,6 +152,18 @@ for s in seed:
         "bestacc" : bestacc,
         "auc": auc
     })
+    train_loss, train_acc, val_loss, val_acc, best_epoch, best_prediction, bestacc, model_augment,auc = trainCNN(0.0001, 150, train_aug, val_aug, 1, 2,very_large_cnn, s)
+    model_extra_large_aug.append(model_augment)
+    result_very_large.append({
+        "seed":s,
+        "train_loss":train_loss,
+        "train_acc" : train_acc,
+        "val_loss" : val_loss,
+        "val_acc" : val_acc,
+        "best_prediction" : best_prediction,
+        "bestacc" : bestacc,
+        "auc": auc
+    })
     print(classification_report(val_aug.dataset.labels, best_prediction))
 
 x_train_pca, x_val_pca, x_test_pca = PCA_ml(x_train, x_val, x_test, seed=0)
@@ -162,10 +178,12 @@ plot_loss_acc(result_medium, 'augmented medium')
 statistics(val_aug, result_large, 'augmented large')
 
 plot_loss_acc(result_large, 'augmented large')
+
+statistics(val_aug, result_very_large, 'augmented very large')
+plot_loss_acc(result_very_large, 'augmented very large')
 result_medium.clear()
 result_large.clear()
-
-
+result_very_large.clear()
 
 print("Final test evaluation:")
 
@@ -229,6 +247,8 @@ test_f1.clear()
 test_auc.clear()
 
 
+
+
 for m in  model_med_aug:
     
     acc, prec, rec, f1, cm, auc = evaluate_CNN(m, test)
@@ -255,13 +275,13 @@ for m in  model_large_aug:
     test_auc.append(auc)
 
 print("Large / Augmentation: ")
+
 test_performance(test_acc,test_prec,test_recall,test_f1, test_auc)
 test_acc.clear()
 test_prec.clear()
 test_recall.clear()
 test_f1.clear()
 test_auc.clear()
-
 
 
 
