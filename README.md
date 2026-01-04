@@ -8,7 +8,7 @@ The project benchmarks classical machine learning and deep learning models on th
 ---
 
 ## Project Structure
-
+```
 AMLS_25_26_SN22145579/
 │
 ├── A/ # Model A – Classical ML (SVM)
@@ -24,7 +24,7 @@ AMLS_25_26_SN22145579/
 ├── Datasets/ # Leave empty for submission
 └── README.md
 
-
+```
 ---
 
 ## Requirements
