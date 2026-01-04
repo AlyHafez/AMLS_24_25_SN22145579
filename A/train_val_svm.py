@@ -66,9 +66,10 @@ def performance(y_true, y_pred, y_score):
 
 
     print("SVM performance:")
-    print(f"accuracy SVM is: {accuracy}")
-    print(f"precision SVM is : {precision}")
-    print(f"Recall SVM is: {recall}")
-    print(f"F1 SVM is: {f1}")
-    print(f"AUC SVM is: {auc}")
+    print(f"accuracy SVM is: {accuracy:.3f}")
+    print(f"precision SVM is : {precision:.3f}")
+    print(f"Recall SVM is: {recall:.3f}")
+    print(f"F1 SVM is: {f1:.3f}")
+    print(f"AUC SVM is: {auc:.3f}")
+    print(classification_report(y_true, y_pred))
     print(confusion_matrix(y_true, y_pred))

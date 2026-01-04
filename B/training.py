@@ -49,12 +49,12 @@ class CNN(nn.Module):
 
     def forward(self, x):
         """
-        define forward pass for neural network
+        define forward pass for neural network  
         Parameters:
         x: Input tensor
 
         Returns:
-        torch.Tensor
+        Output tensor after passing through the network
         """
 
         x = self.conv1(x)
@@ -274,7 +274,7 @@ def evaluate_CNN(model, test, device=None):
     f1 = f1_score(y_true, y_pred, average="macro", zero_division=0)
     cm = confusion_matrix(y_true, y_pred)
     auc = roc_auc_score(y_true, y_score)
-
+    print(classification_report(y_true, y_pred))
     return acc, prec, rec, f1, cm, auc
    
 
