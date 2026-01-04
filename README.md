@@ -30,12 +30,14 @@ AMLS_25_26_SN22145579
 |__README.md
 
 The following packages are required
-numpy
+numpy<2
 scikit-learn
 torch
 torchvision
 medmnist
 matplotlib
+
+NumPy is constrained to <2 to ensure compatability.
 
 They can be installed using the requirement.txt file 
 pip install -r requirement.txt
