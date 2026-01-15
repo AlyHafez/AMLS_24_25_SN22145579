@@ -1,3 +1,4 @@
+
 import medmnist
 import numpy as np
 from medmnist.dataset import BreastMNIST
@@ -52,6 +53,8 @@ def load_dataset_ml(train,val,test):
     x_train = (x_train - 0.5) / 0.5
     x_val   = (x_val   - 0.5) / 0.5
     x_test  = (x_test  - 0.5) / 0.5
+
+
 
     return x_train, y_train, x_val, y_val, x_test, y_test
 
